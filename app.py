@@ -35,7 +35,7 @@ authenticator = stauth.Authenticate(
     config['cookie']['expiry_days']
 )
 
-name, authentication_status, username = authenticator.login("Login", "main")
+name, authentication_status, username = authenticator.login('Login', 'main')
 
 if authentication_status == False:
     st.error("Username/password is incorrect")
@@ -236,3 +236,4 @@ with col2:
         st.session_state.totals = {}
         st.session_state.discount = 0.0
         st.rerun()
+
