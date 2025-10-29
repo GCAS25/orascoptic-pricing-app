@@ -3,36 +3,6 @@ import streamlit as st
 import pandas as pd
 from PIL import Image
 import os
-import streamlit_authenticator as stauth
-import yaml
-from yaml.loader import SafeLoader
-
-with open('config.yaml') as file:
-    config = yaml.load(file, Loader=SafeLoader)
-
-authenticator = stauth.Authenticate(
-    config['credentials'],
-    config['cookie']['name'],
-    config['cookie']['key'],
-    config['cookie']['expiry_days']
-)
-
-name, authentication_status, username = authenticator.login('Login','main')
-
-if authentication_status == False:
-    st.error('Username/password is incorrect')
-    st.stop()
-elif authentication_status is None:
-    st.warning('Please enter your user name and password')
-    st.stop()
-
-user_email = config['credentials']['usernames']
-[username]['email']
-if not user_email.endswith('@envistaco.com'):
-    st.error('Access denied: Invalid domain.')
-    st.stop
-
-authenticator.logout('Logout','main')
 
 st.set_page_config(page_title="Orascoptic Pricing Tool", layout="wide")
 
@@ -306,6 +276,7 @@ with col2:
 # Sidebar for password later
 st.sidebar.title("Security")
 st.sidebar.info("App is live! Add password in settings.")
+
 
 
 
