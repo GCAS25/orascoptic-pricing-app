@@ -83,7 +83,7 @@ def update_total_display():
     return '\n'.join(total_lines) if total_lines else 'No items selected'
 
 # Main UI
-st.title("🦋 Orascoptic Accessories Price Search")
+st.title("Orascoptic Dynamic Price Search")
 if os.path.exists("orascoptic_logo.png"):
     st.image(Image.open("orascoptic_logo.png"), width=250)
 
@@ -276,4 +276,5 @@ with col2:
 # Sidebar for password later
 st.sidebar.title("Security")
 st.sidebar.info("App is live! Add password in settings.")
+
 
