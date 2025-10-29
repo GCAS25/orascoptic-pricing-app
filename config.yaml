@@ -1,14 +1,14 @@
 credentials:
   usernames:
-    orascoptic:
-    email: graham.cassel@envistaco.com
-    name: Graham
-    Password: OrascopticBetaPrice2025!
+    admin:
+      email: graham.cassel@envistaco.com
+      name: Graham Cassel
+      Password: $2b$12$Ztx6DN4LKCQwaX4yHaokVu2Gukmuuj0ibunUo8PG1s5/r0ENg2Wvu
 
 cookie:
   expiry_days: 30
-  key: orascoptic_key_1
-  name: ora_cookie
+  key: envista_secure_key_ora_1
+  name: envista_cookie
 
 Preauthorized
   emails:
