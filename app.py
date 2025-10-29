@@ -39,6 +39,66 @@ def format_price(price):
         return "N/A"
 
 def parse_price_entry(entry):
+    import re
+    match = re.search(r'(Price|Bundle):\s*([\d,]+\.?\d*)\s*(\S+)', entry)
+    if match:
+        return float(match.group(2).replace(',', '')), match.group(3)
+    return 0, ''
+
+def add_to_list(price_str, part_str, contents_str, mode):
+    bifocal_add = 0
+    if mode == 'Loupes Only' and st.session_state.bifocal_price > 0:
+        bifocal_add = st.session_state.bifocal_price
+        price_str += f"\n+ Bifocal: {format_price(bifocal_add)} {parse_price_entry(price_str)[1]}"
+    
+    full_entry = f"{price_str}\n{part_str}\n{contents_str}"
+    st.session_state.selection_list.append(full_entry)
+    
+    price, currency = parse_price_entry(price_str)
+    total_price = price + bifocal_add
+    if currency in st.session_state.totals:
+        st.session_state.totals[currency] += total_price
+    else:
+        st.session_state.totals[currency] = total_price
+
+def update_total_display():
+    totals = {}
+    for entry in st.session_state.selection_list:
+        if entry.startswith('Discount:'):
+            continue
+        price, currency = parse_price_entry(entry)
+        if price > 0:
+            if currency in totals:
+                totals[currency] += price
+            else:
+                totals[currency] = price
+    
+    total_lines = []
+    for currency, subtotal in totals.items():
+        adjusted = subtotal - st.session_state.discount
+        if adjusted < 0:
+            adjusted = 0
+        total_lines.append(f"{currency} {format_price(adjusted)}")
+    
+    return '\n'.join(total_lines) if total_lines else 'No items selected'
+
+# Main UI
+st.title("🦋 Orascoptic Accessories Price Search")
+if os.path.exists("orascoptic_logo.png"):
+    st.image(Image.open("orascoptic_logo.png"), width=250)
+
+col1, col2 = st.columns([2, 1])
+
+with col1:
+    st.subheader("📋 Product Selection")
+    mode = st.selectbox("Select Mode:", ['Accessories', 'Loupes Only', 'Light Systems', 'Omni Optic', 'School Bundle'])
+    
+    price_text = ""
+    part_text = ""
+    contents_text = ""
+    currency = ""
+    
+    # Accessories Mode
     if mode == 'Accessories' and not accessories_df.empty:
         markets = [str(x) for x in accessories_df.iloc[2, 4:].dropna().tolist() if x != '']
         market = st.selectbox("Select Market", ['Select Market'] + markets)
@@ -138,4 +198,81 @@ def parse_price_entry(entry):
         descriptions = []
         if product != 'Select Product':
             desc_mask = omni_df.iloc[:, 0] == product
-            descriptions = [str(x) for x in omni
+            descriptions = [str(x) for x in omni_df.loc[desc_mask, 1].dropna().astype(str).unique().tolist() if x != '']
+        description = st.selectbox("Select Description", ['Select Description'] + descriptions)
+        
+        if all([market != 'Select Market', product != 'Select Product', description != 'Select Description']):
+            market_col = list(omni_df.iloc[2]).index(market) 
+            row_mask = (omni_df.iloc[:, 0] == product) & (omni_df.iloc[:, 1] == description)
+            if row_mask.any():
+                row_idx = row_mask.idxmax()
+                price = omni_df.at[row_idx, market_col]
+                currency = omni_df.at[3, market_col]
+                price_text = f"Price: {format_price(price)} {currency}"
+                part_text = f"Part Number: N/A"
+    
+    # School Bundle Mode (simplified)
+    elif mode == 'School Bundle' and not school_df.empty:
+        configs = [str(x) for x in school_df.iloc[1, 3:19].dropna().tolist() if x != '']
+        config = st.selectbox("Select Configuration", ['Select Configuration'] + configs)
+        
+        loupes = [str(x) for x in school_df.iloc[6:45, 0].dropna().astype(str).unique().tolist() if x != '']
+        loupe = st.selectbox("Select Loupe", ['Select Loupe'] + loupes)
+        
+        lights = []
+        if loupe != 'Select Loupe':
+            light_mask = school_df.iloc[:, 0] == loupe
+            lights = [str(x) for x in school_df.loc[light_mask, 2].dropna().astype(str).unique().tolist() if x != '']
+        light = st.selectbox("Select Light", ['Select Light'] + lights)
+        
+        if all([config != 'Select Configuration', loupe != 'Select Loupe', light != 'Select Light']):
+            config_col = list(school_df.iloc[1]).index(config) 
+            row_mask = (school_df.iloc[:, 0] == loupe) & (school_df.iloc[:, 2] == light)
+            if row_mask.any():
+                row_idx = row_mask.idxmax()
+                currency = school_df.at[2, config_col]
+                bundle_price = school_df.at[row_idx, config_col + 3]
+                price_text = f"Bundle: {format_price(bundle_price)} {currency}"
+                part_text = f"Loupe: {format_price(school_df.at[row_idx, config_col])} {currency}\nLight: {format_price(school_df.at[row_idx, config_col + 1])} {currency}\nDiscount: {format_price(school_df.at[row_idx, config_col + 2])} {currency}"
+                contents_text = f"Loupe: {loupe}\nLight: {light}"
+    
+    # Display results
+    if price_text:
+        st.success(price_text)
+    if part_text:
+        st.info(part_text)
+    if contents_text:
+        st.caption(contents_text)
+    
+    if st.button("➕ Add to List", type="primary") and price_text:
+        add_to_list(price_text, part_text, contents_text, mode)
+        st.success("Added to list!")
+
+with col2:
+    st.subheader("🛒 Shopping List & Total")
+    
+    # List
+    for i, item in enumerate(st.session_state.selection_list):
+        st.text(item)
+        st.markdown("---")
+    
+    # Totals
+    total_display = update_total_display()
+    st.metric("Sub-Total", total_display)
+    
+    # Discount
+    discount_input = st.number_input("💰 Optional Discount", min_value=0.0, step=10.0)
+    if st.button("Apply Discount"):
+        st.session_state.discount = discount_input
+        st.session_state.selection_list.append(f"Discount: -{format_price(discount_input)}")
+        st.rerun()
+    
+    if st.button("🗑️ Reset List"):
+        st.session_state.selection_list = []
+        st.session_state.totals = {}
+        st.session_state.discount = 0
+        st.rerun()
+
+# Sidebar for password later
+st.sidebar.title("Security")
+st.sidebar.info("App is live! Add password in settings.")
