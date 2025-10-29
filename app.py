@@ -126,7 +126,7 @@ with col1:
                 price = accessories_df.at[row_idx, market_col]
                 currency = accessories_df.at[3, market_col]
                 part = accessories_df.at[row_idx, 2]
-                contents = accessories_df.at[row_idx, -1] if pd.notna(accessories_df.at[row_idx, -1]) else ''
+                contents = accessories_df.iat[row_idx, -1] if pd.notna(accessories_df.iat[row_idx, -1]) else ''
                 price_text = f"Price: {format_price(price)} {currency}"
                 part_text = f"Part Number: {part}"
                 contents_text = f"Contents: {contents}"
@@ -276,3 +276,4 @@ with col2:
 # Sidebar for password later
 st.sidebar.title("Security")
 st.sidebar.info("App is live! Add password in settings.")
+
