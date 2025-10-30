@@ -3,6 +3,65 @@ import streamlit as st
 import pandas as pd
 from PIL import Image
 import os
+import yaml
+from yaml.loader import SafeLoader
+import streamlit_authenticator as stauth
+import re
+
+# Page config
+st.set_page_config(page_title="Envista Pricing Tool", layout="wide")
+
+# Load YAML config
+try:
+    with open('config.yaml') as file:
+        config = yaml.load(file, Loader=SafeLoader)
+except FileNotFoundError:
+    st.error("config.yaml not found. Please add it to the repo.")
+    st.stop()
+
+# Authenticator setup
+authenticator = stauth.Authenticate(
+    config['credentials'],
+    config['cookie']['name'],
+    config['cookie']['key'],
+    config['cookie']['expiry_days'],
+    config['preauthorized']
+)
+
+# Registration config (domain-restricted)
+registration_config = stauth.RegistrationAuthenticator(
+    config['credentials'],
+    config['cookie']['name'],
+    config['cookie']['key'],
+    config['cookie']['expiry_days'],
+    config['preauthorized'],
+    domains=config['registration']['allowed_domains']  # Only @envistaco.com
+)
+
+# Login + Registration
+name, authentication_status, username = authenticator.login('Login', 'main')
+
+if authentication_status == False:
+    st.error('Username/password is incorrect')
+    st.stop()
+elif authentication_status == None:
+    st.warning('Please enter your username and password.')
+    st.info("New users? Register below (only @envistaco.com allowed).")
+    # Registration form
+    try:
+        field_status, field_message = registration_config.register_user('Register', primary_button='Sign up', cookie_samesite='Lax')
+    except Exception as e:
+        st.error(f"Registration error: {e}")
+    st.stop()
+
+# Domain check (extra layer)
+user_email = config['credentials']['usernames'][username]['email'] if username in config['credentials']['usernames'] else ''
+if not user_email.endswith('@envistaco.com'):
+    st.error('Access denied: Only @envistaco.com emails allowed.')
+    st.stop()
+
+# Logout
+authenticator.logout('Logout', 'main')
 
 st.set_page_config(page_title="Orascoptic Pricing Tool", layout="wide")
 
@@ -276,6 +335,7 @@ with col2:
 # Sidebar for password later
 st.sidebar.title("Security")
 st.sidebar.info("App is live! Add password in settings.")
+
 
 
 
