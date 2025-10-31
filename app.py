@@ -1,4 +1,4 @@
-# app.py — FINAL: Domain-Restricted Login + Registration + ALL MODES (Accessories, Loupes, Lights, Omni, School)
+# app.py — FINAL: Domain-Restricted + ALL MODES + LOGIN IN SIDEBAR
 import streamlit as st
 import pandas as pd
 from PIL import Image
@@ -19,7 +19,7 @@ except Exception as e:
     st.error(f"Config load failed: {e}")
     st.stop()
 
-# === AUTHENTICATOR (CORRECT: allowed_domains in config only) ===
+# === AUTHENTICATOR ===
 authenticator = stauth.Authenticate(
     config['credentials'],
     config['cookie']['name'],
@@ -28,8 +28,8 @@ authenticator = stauth.Authenticate(
     config['preauthorized']
 )
 
-# === LOGIN ===
-name, authentication_status, username = authenticator.login('Login', 'main')
+# === LOGIN IN SIDEBAR (REQUIRED) ===
+name, authentication_status, username = authenticator.login('Login', 'sidebar')
 
 if authentication_status == False:
     st.error('Username/password is incorrect')
@@ -37,7 +37,7 @@ if authentication_status == False:
 elif authentication_status is None:
     st.warning('Please enter your username and password.')
 
-    # === REGISTRATION (Domain-restricted via config) ===
+    # === REGISTRATION (in main) ===
     try:
         if authenticator.register_user('Register', pre_authorization=True):
             st.success('User registered successfully')
@@ -47,14 +47,15 @@ elif authentication_status is None:
         st.error(f"Registration failed: {e}")
     st.stop()
 
-# === EXTRA DOMAIN CHECK ===
+# === DOMAIN CHECK ===
 user_email = config['credentials']['usernames'][username]['email']
 if not user_email.endswith('@envistaco.com'):
     st.error('Access denied: Only @envistaco.com emails allowed.')
     st.stop()
 
-# === LOGOUT ===
-authenticator.logout('Logout', 'main')
+# === LOGOUT IN SIDEBAR ===
+authenticator.logout('Logout', 'sidebar')
+
 
 # === LOAD EXCEL SHEETS ===
 @st.cache_data
@@ -143,7 +144,8 @@ with col1:
 
     price_text = part_text = contents_text = ""
 
-    # === ACCESSORIES MODE (FULLY INCLUDED) ===
+    # === ACCESSORIES MODE ===
+
     if mode == 'Accessories' and not accessories_df.empty:
         markets = [str(x) for x in accessories_df.iloc[2, 4:].dropna().tolist() if x != '']
         market = st.selectbox("Select Market", ['Select Market'] + markets)
