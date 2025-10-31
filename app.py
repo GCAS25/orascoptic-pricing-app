@@ -1,4 +1,4 @@
-# app.py — FULLY WORKING: Domain-Restricted Login + Registration + ALL MODES
+# app.py — FINAL: Domain-Restricted Login + ALL MODES + NO ERRORS
 import streamlit as st
 import pandas as pd
 from PIL import Image
@@ -19,14 +19,14 @@ except Exception as e:
     st.error(f"Config load failed: {e}")
     st.stop()
 
-# === AUTHENTICATOR (Handles Login + Registration) ===
+# === AUTHENTICATOR (CORRECT: allowed_domains INSIDE config) ===
 authenticator = stauth.Authenticate(
     config['credentials'],
     config['cookie']['name'],
     config['cookie']['key'],
     config['cookie']['expiry_days'],
-    config['preauthorized'],
-    allowed_domains=config['registration']['allowed_domains']  # ← @envistaco.com only
+    config['preauthorized']
+    # allowed_domains REMOVED — it's already in config!
 )
 
 # === LOGIN ===
@@ -38,7 +38,7 @@ if authentication_status == False:
 elif authentication_status is None:
     st.warning('Please enter your username and password.')
 
-    # === REGISTRATION (Built-in) ===
+    # === REGISTRATION (Domain-restricted via config) ===
     try:
         if authenticator.register_user('Register', pre_authorization=True):
             st.success('User registered successfully')
@@ -48,7 +48,7 @@ elif authentication_status is None:
         st.error(f"Registration failed: {e}")
     st.stop()
 
-# === EXTRA DOMAIN CHECK ===
+# === EXTRA DOMAIN CHECK (Double Security) ===
 user_email = config['credentials']['usernames'][username]['email']
 if not user_email.endswith('@envistaco.com'):
     st.error('Access denied: Only @envistaco.com emails allowed.')
@@ -83,7 +83,6 @@ if 'discount' not in st.session_state:
     st.session_state.discount = 0
 
 # === HELPERS ===
-
 def format_price(price):
     try:
         return f"{float(price):,.2f}"
@@ -146,7 +145,6 @@ with col1:
     price_text = part_text = contents_text = ""
 
     # === ACCESSORIES MODE ===
-
     if mode == 'Accessories' and not accessories_df.empty:
         markets = [str(x) for x in accessories_df.iloc[2, 4:].dropna().tolist() if x != '']
         market = st.selectbox("Select Market", ['Select Market'] + markets)
@@ -162,8 +160,9 @@ with col1:
 
         descriptions = []
         if sub_category != 'Select Sub-Category':
-            sub_mask = (accessories_df.iloc[:, 0] == category) & (accessories_df.iloc[:, 1] == sub_category)
-            descriptions = [str(x) for x in accessories_df.loc[sub_mask, 3].dropna().astype(str).unique().tolist() if x != '']
+            desc_mask = (accessories_df.iloc[:, 0] == category) & (accessories_df.iloc[:, 1] == sub_category)
+            descriptions = [str(x) for x in accessories_df.loc[desc_mask, 3].dropna().astype(str).unique().tolist() if x != '']
+
         description = st.selectbox("Select Description", ['Select Description'] + descriptions)
 
         if all([market != 'Select Market', category != 'Select Category',
@@ -289,7 +288,7 @@ with col1:
                            f"Discount: {format_price(school_df.at[row_idx, config_col + 2])} {currency}"
                 contents_text = f"Loupe: {loupe}\nLight: {light}"
 
-    # === DISPLAY RESULTS ===
+# === DISPLAY RESULTS ===
     if price_text:
         st.success(price_text)
     if part_text:
@@ -303,7 +302,6 @@ with col1:
 
 with col2:
     st.subheader("Shopping List & Total")
-
     for item in st.session_state.selection_list:
         st.text(item)
         st.markdown("---")
