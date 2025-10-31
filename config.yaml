@@ -3,17 +3,18 @@ credentials:
     admin:
       email: graham.cassel@envistaco.com
       name: Graham Cassel
-      Password: $2b$12$Ztx6DN4LKCQwaX4yHaokVu2Gukmuuj0ibunUo8PG1s5/r0ENg2Wvu
+      password: Orascoptic2025!  # Plain text - auto-hashed on first run
 
 cookie:
   expiry_days: 30
-  key: envista_secure_key_ora_1
+  key: envista_secure_key_2025_change_this  # Change to random string
   name: envista_cookie
 
-Preauthorized
+preauthorized:
   emails:
-    - graham.cassel@envistaco.com
+    - graham.cassel@envistaco.com  # Admin pre-approved
 
+# Domain restriction: Only @envistaco.com can register/login
 registration:
   allowed_domains:
     - envistaco.com
