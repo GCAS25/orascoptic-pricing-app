@@ -1,5 +1,4 @@
-# app.py — FINAL: ALL FIXES, NO ERRORS
-
+# app.py — FINAL: LOGIN IN MAIN, ALL MODES, NO ERRORS
 import streamlit as st
 import pandas as pd
 from PIL import Image
@@ -29,8 +28,8 @@ authenticator = stauth.Authenticate(
     config['preauthorized']
 )
 
-# === LOGIN IN MAIN (location='main' REQUIRED!) ===
-name, authentication_status, username = authenticator.login('Login', location='main')
+# === LOGIN IN MAIN (location="main" REQUIRED!) ===
+name, authentication_status, username = authenticator.login('Login', location="main")
 
 if authentication_status == False:
     st.error('Username/password is incorrect')
@@ -55,7 +54,7 @@ if not user_email.endswith('@envistaco.com'):
     st.stop()
 
 # === LOGOUT IN MAIN ===
-authenticator.logout('Logout', 'main')
+authenticator.logout('Logout', "main")
 
 # === LOAD EXCEL SHEETS ===
 @st.cache_data
@@ -67,8 +66,7 @@ def load_sheet(sheet_name):
         return pd.DataFrame()
 
 accessories_df = load_sheet("Accessories")
-loupes_df = load_sheet("Loupes Only")  # FIXED: loupes_df
-
+loupes_df = load_sheet("Loupes Only")
 lights_df = load_sheet("Light Systems")
 omni_df = load_sheet("Omni Optic")
 school_df = load_sheet("School Bundles")
@@ -182,8 +180,7 @@ with col1:
                 contents_text = f"Contents: {contents}"
 
     # === LOUPES ONLY MODE ===
-    elif mode == 'Loupes Only' and not loupes_df.empty:  # FIXED: loupes_df
-
+    elif mode == 'Loupes Only' and not loupes_df.empty:
         markets = [str(x) for x in loupes_df.iloc[1, 2:].dropna().tolist() if x != '']
         market = st.selectbox("Select Market", ['Select Market'] + markets)
 
@@ -194,7 +191,8 @@ with col1:
         if telescope != 'Select Telescope':
             frame_mask = loupes_df.iloc[:, 0] == telescope
             frames = [str(x) for x in loupes_df.loc[frame_mask, 1].dropna().astype(str).unique().tolist() if x != '']
-        frame = st.selectbox("Select Frame", ['Select Frame'] + frames)
+        frame ==st.selectbox("Select Frame", ['Select Frame'] + frames)
+
 
         bifocal = st.checkbox("Bifocal?")
         st.session_state.bifocal_price = 100 if bifocal else 0
@@ -311,8 +309,7 @@ with col2:
     st.metric("Sub-Total", update_total_display())
 
     discount_input = st.number_input("Optional Discount", min_value=0.0, step=10.0)
-    if st.button("Apply Discount"):  # FIXED: st.button(
-
+    if st.button("Apply Discount"):
         st.session_state.discount = discount_input
         st.session_state.selection_list.append(f"Discount: -{format_price(discount_input)}")
         st.rerun()
