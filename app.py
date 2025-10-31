@@ -191,7 +191,7 @@ with col1:
         if telescope != 'Select Telescope':
             frame_mask = loupes_df.iloc[:, 0] == telescope
             frames = [str(x) for x in loupes_df.loc[frame_mask, 1].dropna().astype(str).unique().tolist() if x != '']
-        frame ==st.selectbox("Select Frame", ['Select Frame'] + frames)
+        frame =st.selectbox("Select Frame", ['Select Frame'] + frames)
 
 
         bifocal = st.checkbox("Bifocal?")
@@ -321,6 +321,7 @@ with col2:
         st.rerun()
 
 st.sidebar.info(f"Logged in as: {name} ({user_email})")
+
 
 
 
