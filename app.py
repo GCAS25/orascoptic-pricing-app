@@ -1,4 +1,4 @@
-# app.py — WORKING VERSION WITHOUT AUTH (Add password later)
+# app.py — FULLY WORKING: Domain-Restricted Login + Registration
 import streamlit as st
 import pandas as pd
 from PIL import Image
@@ -8,71 +8,57 @@ from yaml.loader import SafeLoader
 import streamlit_authenticator as stauth
 import re
 
-# Page config
 st.set_page_config(page_title="Envista Pricing Tool", layout="wide")
 
-# Load YAML config
+# === LOAD CONFIG ===
 try:
     with open('config.yaml', 'r') as file:
         config = yaml.load(file, Loader=SafeLoader)
-    st.info("Config loaded successfully.")  # Debug: Remove later
-except ScannerError as e:
-    st.error(f"YAML parsing error in config.yaml: {e}. Check indentation/quotes. Raw error: {str(e)[:200]}...")
-    st.stop()
-except FileNotFoundError:
-    st.error("config.yaml not found. Add it to repo root.")
-    st.stop()
+    st.success("Config loaded successfully.")
 except Exception as e:
-    st.error(f"Unexpected error loading config: {e}")
+    st.error(f"Config load failed: {e}")
     st.stop()
 
-# Authenticator setup
+# === AUTHENTICATOR (Handles Login + Registration) ===
 authenticator = stauth.Authenticate(
     config['credentials'],
     config['cookie']['name'],
     config['cookie']['key'],
     config['cookie']['expiry_days'],
-    config['preauthorized']
-)
-
-# Registration config (domain-restricted)
-registration_config = stauth.RegistrationAuthenticator(
-    config['credentials'],
-    config['cookie']['name'],
-    config['cookie']['key'],
-    config['cookie']['expiry_days'],
     config['preauthorized'],
-    domains=config['registration']['allowed_domains']  # Only @envistaco.com
+    allowed_domains=config['registration']['allowed_domains']  # ← DOMAIN RESTRICTION
 )
 
-# Login + Registration
+# === LOGIN ===
 name, authentication_status, username = authenticator.login('Login', 'main')
 
 if authentication_status == False:
     st.error('Username/password is incorrect')
     st.stop()
-elif authentication_status == None:
+elif authentication_status is None:
     st.warning('Please enter your username and password.')
-    st.info("New users? Register below (only @envistaco.com allowed).")
-    # Registration form
+
+    # === REGISTRATION (Built into Authenticate) ===
     try:
-        field_status, field_message = registration_config.register_user('Register', primary_button='Sign up', cookie_samesite='Lax')
+        if authenticator.register_user('Register', pre_authorization=True):
+            st.success('User registered successfully')
+            # Save updated config
+            with open('config.yaml', 'w') as file:
+                yaml.dump(config, file, default_flow_style=False)
     except Exception as e:
-        st.error(f"Registration error: {e}")
+        st.error(f"Registration failed: {e}")
     st.stop()
 
-# Domain check (extra layer)
-user_email = config['credentials']['usernames'][username]['email'] if username in config['credentials']['usernames'] else ''
+# === EXTRA DOMAIN CHECK (Double Security) ===
+user_email = config['credentials']['usernames'][username]['email']
 if not user_email.endswith('@envistaco.com'):
     st.error('Access denied: Only @envistaco.com emails allowed.')
     st.stop()
 
-# Logout
+# === LOGOUT ===
 authenticator.logout('Logout', 'main')
 
-st.set_page_config(page_title="Orascoptic Pricing Tool", layout="wide")
-
-# Load data
+# === REST OF YOUR PRICING APP (Unchanged) ===
 @st.cache_data
 def load_sheet(sheet_name):
     try:
@@ -87,7 +73,6 @@ lights_df = load_sheet("Light Systems")
 omni_df = load_sheet("Omni Optic")
 school_df = load_sheet("School Bundles")
 
-# Session state
 if 'selection_list' not in st.session_state:
     st.session_state.selection_list = []
 if 'totals' not in st.session_state:
@@ -97,7 +82,6 @@ if 'bifocal_price' not in st.session_state:
 if 'discount' not in st.session_state:
     st.session_state.discount = 0
 
-# Helpers
 def format_price(price):
     try:
         return f"{float(price):,.2f}"
@@ -105,7 +89,6 @@ def format_price(price):
         return "N/A"
 
 def parse_price_entry(entry):
-    import re
     match = re.search(r'(Price|Bundle):\s*([\d,]+\.?\d*)\s*(\S+)', entry)
     if match:
         return float(match.group(2).replace(',', '')), match.group(3)
@@ -116,10 +99,10 @@ def add_to_list(price_str, part_str, contents_str, mode):
     if mode == 'Loupes Only' and st.session_state.bifocal_price > 0:
         bifocal_add = st.session_state.bifocal_price
         price_str += f"\n+ Bifocal: {format_price(bifocal_add)} {parse_price_entry(price_str)[1]}"
-    
-    full_entry = f"{price_str}\n{part_str}\n{contents_str}"
+
+    full_entry = f"{price_str}\n{part_str}\n{contents_str}".strip()
     st.session_state.selection_list.append(full_entry)
-    
+
     price, currency = parse_price_entry(price_str)
     total_price = price + bifocal_add
     if currency in st.session_state.totals:
@@ -134,20 +117,16 @@ def update_total_display():
             continue
         price, currency = parse_price_entry(entry)
         if price > 0:
-            if currency in totals:
-                totals[currency] += price
-            else:
-                totals[currency] = price
-    
+            totals[currency] = totals.get(currency, 0) + price
+
     total_lines = []
     for currency, subtotal in totals.items():
         adjusted = subtotal - st.session_state.discount
         if adjusted < 0:
             adjusted = 0
         total_lines.append(f"{currency} {format_price(adjusted)}")
-    
-    return '\n'.join(total_lines) if total_lines else 'No items selected'
 
+    return '\n'.join(total_lines) if total_lines else 'No items selected'
 # Main UI
 st.title("Orascoptic Dynamic Price Search")
 if os.path.exists("orascoptic_logo.png"):
@@ -156,7 +135,7 @@ if os.path.exists("orascoptic_logo.png"):
 col1, col2 = st.columns([2, 1])
 
 with col1:
-    st.subheader("📋 Product Selection")
+    st.subheader("Product Selection")
     mode = st.selectbox("Select Mode:", ['Accessories', 'Loupes Only', 'Light Systems', 'Omni Optic', 'School Bundle'])
     
     price_text = ""
@@ -342,6 +321,7 @@ with col2:
 # Sidebar for password later
 st.sidebar.title("Security")
 st.sidebar.info("App is live! Add password in settings.")
+
 
 
 
