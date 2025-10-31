@@ -1,4 +1,4 @@
-# app.py — FINAL: Domain-Restricted + ALL MODES + LOGIN IN SIDEBAR
+# app.py — FINAL: Login in MAIN, ALL MODES, NO ERRORS
 import streamlit as st
 import pandas as pd
 from PIL import Image
@@ -17,9 +17,9 @@ try:
     st.success("Config loaded successfully.")
 except Exception as e:
     st.error(f"Config load failed: {e}")
-    st.stop()
+    st .stop()
 
-# === AUTHENTICATOR ===
+# === AUTHENTICATOR (location=None → login in main) ===
 authenticator = stauth.Authenticate(
     config['credentials'],
     config['cookie']['name'],
@@ -28,8 +28,8 @@ authenticator = stauth.Authenticate(
     config['preauthorized']
 )
 
-# === LOGIN IN SIDEBAR (REQUIRED) ===
-name, authentication_status, username = authenticator.login('Login', 'sidebar')
+# === LOGIN IN MAIN (location=None) ===
+name, authentication_status, username = authenticator.login('Login')  # No location!
 
 if authentication_status == False:
     st.error('Username/password is incorrect')
@@ -53,9 +53,9 @@ if not user_email.endswith('@envistaco.com'):
     st.error('Access denied: Only @envistaco.com emails allowed.')
     st.stop()
 
-# === LOGOUT IN SIDEBAR ===
-authenticator.logout('Logout', 'sidebar')
+# === LOGOUT IN MAIN ===
 
+authenticator.logout('Logout', 'main')
 
 # === LOAD EXCEL SHEETS ===
 @st.cache_data
@@ -145,7 +145,6 @@ with col1:
     price_text = part_text = contents_text = ""
 
     # === ACCESSORIES MODE ===
-
     if mode == 'Accessories' and not accessories_df.empty:
         markets = [str(x) for x in accessories_df.iloc[2, 4:].dropna().tolist() if x != '']
         market = st.selectbox("Select Market", ['Select Market'] + markets)
