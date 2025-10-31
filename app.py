@@ -162,7 +162,6 @@ with col1:
         if sub_category != 'Select Sub-Category':
             desc_mask = (accessories_df.iloc[:, 0] == category) & (accessories_df.iloc[:, 1] == sub_category)
             descriptions = [str(x) for x in accessories_df.loc[desc_mask, 3].dropna().astype(str).unique().tolist() if x != '']
-
         description = st.selectbox("Select Description", ['Select Description'] + descriptions)
 
         if all([market != 'Select Market', category != 'Select Category',
@@ -211,7 +210,7 @@ with col1:
                     st.session_state.bifocal_price = bifocal_price
                     price_text += f"\n+ Bifocal: {format_price(bifocal_price)} {currency}"
                 part_text = f"Part Number: {loupes_df.at[row_idx, market_col + 1]}"
-
+                
     # === LIGHT SYSTEMS MODE ===
     elif mode == 'Light Systems' and not lights_df.empty:
         markets = [str(x) for x in lights_df.iloc[2, 3:].dropna().tolist() if x != '']
@@ -287,9 +286,8 @@ with col1:
                            f"Light: {format_price(school_df.at[row_idx, config_col + 1])} {currency}\n" \
                            f"Discount: {format_price(school_df.at[row_idx, config_col + 2])} {currency}"
                 contents_text = f"Loupe: {loupe}\nLight: {light}"
-
 # === DISPLAY RESULTS ===
-    if price_text:
+ if price_text:
         st.success(price_text)
     if part_text:
         st.info(part_text)
