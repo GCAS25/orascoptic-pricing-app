@@ -13,10 +13,17 @@ st.set_page_config(page_title="Envista Pricing Tool", layout="wide")
 
 # Load YAML config
 try:
-    with open('config.yaml') as file:
+    with open('config.yaml', 'r') as file:
         config = yaml.load(file, Loader=SafeLoader)
+    st.info("Config loaded successfully.")  # Debug: Remove later
+except ScannerError as e:
+    st.error(f"YAML parsing error in config.yaml: {e}. Check indentation/quotes. Raw error: {str(e)[:200]}...")
+    st.stop()
 except FileNotFoundError:
-    st.error("config.yaml not found. Please add it to the repo.")
+    st.error("config.yaml not found. Add it to repo root.")
+    st.stop()
+except Exception as e:
+    st.error(f"Unexpected error loading config: {e}")
     st.stop()
 
 # Authenticator setup
@@ -335,6 +342,7 @@ with col2:
 # Sidebar for password later
 st.sidebar.title("Security")
 st.sidebar.info("App is live! Add password in settings.")
+
 
 
 
