@@ -28,8 +28,8 @@ authenticator = stauth.Authenticate(
     config['preauthorized']
 )
 
-# === LOGIN IN MAIN (location='main' REQUIRED) ===
-name, authentication_status, username = authenticator.login('Login', location='main')
+# === LOGIN IN MAIN (NO location ARGUMENT!) ===
+name, authentication_status, username = authenticator.login('Login')  # Correct for v0.3.3
 
 if authentication_status == False:
     st.error('Username/password is incorrect')
@@ -38,7 +38,6 @@ elif authentication_status is None:
     st.warning('Please enter your username and password.')
 
     # === REGISTRATION ===
-
     try:
         if authenticator.register_user('Register', pre_authorization=True):
             st.success('User registered successfully')
@@ -55,7 +54,7 @@ if not user_email.endswith('@envistaco.com'):
     st.stop()
 
 # === LOGOUT IN MAIN ===
-authenticator.logout('Logout', 'main')
+authenticator.logout('Logout')  # No location
 
 # === LOAD EXCEL SHEETS ===
 @st.cache_data
