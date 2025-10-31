@@ -1,4 +1,4 @@
-# app.py — FINAL: Domain-Restricted Login + ALL MODES + NO ERRORS
+# app.py — FINAL: Domain-Restricted Login + Registration + ALL MODES (Accessories, Loupes, Lights, Omni, School)
 import streamlit as st
 import pandas as pd
 from PIL import Image
@@ -19,14 +19,13 @@ except Exception as e:
     st.error(f"Config load failed: {e}")
     st.stop()
 
-# === AUTHENTICATOR (CORRECT: allowed_domains INSIDE config) ===
+# === AUTHENTICATOR (CORRECT: allowed_domains in config only) ===
 authenticator = stauth.Authenticate(
     config['credentials'],
     config['cookie']['name'],
     config['cookie']['key'],
     config['cookie']['expiry_days'],
     config['preauthorized']
-    # allowed_domains REMOVED — it's already in config!
 )
 
 # === LOGIN ===
@@ -48,7 +47,7 @@ elif authentication_status is None:
         st.error(f"Registration failed: {e}")
     st.stop()
 
-# === EXTRA DOMAIN CHECK (Double Security) ===
+# === EXTRA DOMAIN CHECK ===
 user_email = config['credentials']['usernames'][username]['email']
 if not user_email.endswith('@envistaco.com'):
     st.error('Access denied: Only @envistaco.com emails allowed.')
@@ -144,7 +143,7 @@ with col1:
 
     price_text = part_text = contents_text = ""
 
-    # === ACCESSORIES MODE ===
+    # === ACCESSORIES MODE (FULLY INCLUDED) ===
     if mode == 'Accessories' and not accessories_df.empty:
         markets = [str(x) for x in accessories_df.iloc[2, 4:].dropna().tolist() if x != '']
         market = st.selectbox("Select Market", ['Select Market'] + markets)
@@ -210,7 +209,7 @@ with col1:
                     st.session_state.bifocal_price = bifocal_price
                     price_text += f"\n+ Bifocal: {format_price(bifocal_price)} {currency}"
                 part_text = f"Part Number: {loupes_df.at[row_idx, market_col + 1]}"
-                
+
     # === LIGHT SYSTEMS MODE ===
     elif mode == 'Light Systems' and not lights_df.empty:
         markets = [str(x) for x in lights_df.iloc[2, 3:].dropna().tolist() if x != '']
@@ -286,21 +285,22 @@ with col1:
                            f"Light: {format_price(school_df.at[row_idx, config_col + 1])} {currency}\n" \
                            f"Discount: {format_price(school_df.at[row_idx, config_col + 2])} {currency}"
                 contents_text = f"Loupe: {loupe}\nLight: {light}"
-                
-# === DISPLAY RESULTS ===
-if price_text:
-       st.success(price_text)
-   if part_text:
-       st.info(part_text)
-   if contents_text:
-       st.caption(contents_text)
 
-   if st.button("Add to List", type="primary") and price_text:
-       add_to_list(price_text, part_text, contents_text, mode)
-       st.success("Added to list!")
+    # === DISPLAY RESULTS ===
+    if price_text:
+        st.success(price_text)
+    if part_text:
+        st.info(part_text)
+    if contents_text:
+        st.caption(contents_text)
+
+    if st.button("Add to List", type="primary") and price_text:
+        add_to_list(price_text, part_text, contents_text, mode)
+        st.success("Added to list!")
 
 with col2:
     st.subheader("Shopping List & Total")
+
     for item in st.session_state.selection_list:
         st.text(item)
         st.markdown("---")
@@ -320,5 +320,3 @@ with col2:
         st.rerun()
 
 st.sidebar.info(f"Logged in as: {name} ({user_email})")
-
-
