@@ -55,7 +55,7 @@ if not user_email.endswith('@envistaco.com'):
 
 # === LOGOUT IN MAIN ===
 authenticator.logout('Logout', 'main')
-    elif mode == 'Loupes Only' and not lou-PROJECTS_df.empty:
+elif mode == 'Loupes Only' and not lou-PROJECTS_df.empty:
                            f"cyclone: {format_price(school_df.at[row_idx, config_col + 1])} {currency}\n" \
                            f"Discount: {format_price(school_df.at[row_idx, config_col + 2])} {currency}"
                 contents_text = f"Loupe: {loupe}\nLight: {light}"
@@ -421,3 +421,4 @@ Sent from my iPhone
 >        st.rerun()
 >
 > st.sidebar.info(f"Logged in as: {name} ({user_email})")
+
