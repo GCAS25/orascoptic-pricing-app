@@ -1,4 +1,4 @@
-# app.py — FULLY WORKING: Domain-Restricted Login + Registration
+# app.py — FULLY WORKING: Domain-Restricted Login + Registration + ALL MODES
 import streamlit as st
 import pandas as pd
 from PIL import Image
@@ -26,7 +26,7 @@ authenticator = stauth.Authenticate(
     config['cookie']['key'],
     config['cookie']['expiry_days'],
     config['preauthorized'],
-    allowed_domains=config['registration']['allowed_domains']  # ← DOMAIN RESTRICTION
+    allowed_domains=config['registration']['allowed_domains']  # ← @envistaco.com only
 )
 
 # === LOGIN ===
@@ -38,18 +38,17 @@ if authentication_status == False:
 elif authentication_status is None:
     st.warning('Please enter your username and password.')
 
-    # === REGISTRATION (Built into Authenticate) ===
+    # === REGISTRATION (Built-in) ===
     try:
         if authenticator.register_user('Register', pre_authorization=True):
             st.success('User registered successfully')
-            # Save updated config
             with open('config.yaml', 'w') as file:
                 yaml.dump(config, file, default_flow_style=False)
     except Exception as e:
         st.error(f"Registration failed: {e}")
     st.stop()
 
-# === EXTRA DOMAIN CHECK (Double Security) ===
+# === EXTRA DOMAIN CHECK ===
 user_email = config['credentials']['usernames'][username]['email']
 if not user_email.endswith('@envistaco.com'):
     st.error('Access denied: Only @envistaco.com emails allowed.')
@@ -58,7 +57,7 @@ if not user_email.endswith('@envistaco.com'):
 # === LOGOUT ===
 authenticator.logout('Logout', 'main')
 
-# === REST OF YOUR PRICING APP (Unchanged) ===
+# === LOAD EXCEL SHEETS ===
 @st.cache_data
 def load_sheet(sheet_name):
     try:
@@ -73,6 +72,7 @@ lights_df = load_sheet("Light Systems")
 omni_df = load_sheet("Omni Optic")
 school_df = load_sheet("School Bundles")
 
+# === SESSION STATE ===
 if 'selection_list' not in st.session_state:
     st.session_state.selection_list = []
 if 'totals' not in st.session_state:
@@ -81,6 +81,8 @@ if 'bifocal_price' not in st.session_state:
     st.session_state.bifocal_price = 0
 if 'discount' not in st.session_state:
     st.session_state.discount = 0
+
+# === HELPERS ===
 
 def format_price(price):
     try:
@@ -127,8 +129,9 @@ def update_total_display():
         total_lines.append(f"{currency} {format_price(adjusted)}")
 
     return '\n'.join(total_lines) if total_lines else 'No items selected'
-# Main UI
-st.title("Orascoptic Dynamic Price Search")
+
+# === MAIN UI ===
+st.title("Orascoptic Accessories Price Search")
 if os.path.exists("orascoptic_logo.png"):
     st.image(Image.open("orascoptic_logo.png"), width=250)
 
@@ -136,36 +139,39 @@ col1, col2 = st.columns([2, 1])
 
 with col1:
     st.subheader("Product Selection")
-    mode = st.selectbox("Select Mode:", ['Accessories', 'Loupes Only', 'Light Systems', 'Omni Optic', 'School Bundle'])
-    
-    price_text = ""
-    part_text = ""
-    contents_text = ""
-    currency = ""
-    
-    # Accessories Mode
+    mode = st.selectbox("Select Mode:", [
+        'Accessories', 'Loupes Only', 'Light Systems', 'Omni Optic', 'School Bundle'
+    ])
+
+    price_text = part_text = contents_text = ""
+
+    # === ACCESSORIES MODE ===
+
     if mode == 'Accessories' and not accessories_df.empty:
         markets = [str(x) for x in accessories_df.iloc[2, 4:].dropna().tolist() if x != '']
         market = st.selectbox("Select Market", ['Select Market'] + markets)
-        
+
         categories = [str(x) for x in accessories_df.iloc[4:, 0].dropna().astype(str).unique().tolist() if x != '']
         category = st.selectbox("Select Category", ['Select Category'] + categories)
-        
+
         sub_categories = []
         if category != 'Select Category':
             sub_mask = accessories_df.iloc[:, 0] == category
             sub_categories = [str(x) for x in accessories_df.loc[sub_mask, 1].dropna().astype(str).unique().tolist() if x != '']
         sub_category = st.selectbox("Select Sub-Category", ['Select Sub-Category'] + sub_categories)
-        
+
         descriptions = []
         if sub_category != 'Select Sub-Category':
             sub_mask = (accessories_df.iloc[:, 0] == category) & (accessories_df.iloc[:, 1] == sub_category)
             descriptions = [str(x) for x in accessories_df.loc[sub_mask, 3].dropna().astype(str).unique().tolist() if x != '']
         description = st.selectbox("Select Description", ['Select Description'] + descriptions)
-        
-        if all([market != 'Select Market', category != 'Select Category', sub_category != 'Select Sub-Category', description != 'Select Description']):
-            market_col = list(accessories_df.iloc[2]).index(market) 
-            row_mask = (accessories_df.iloc[:, 0] == category) & (accessories_df.iloc[:, 1] == sub_category) & (accessories_df.iloc[:, 3] == description)
+
+        if all([market != 'Select Market', category != 'Select Category',
+                sub_category != 'Select Sub-Category', description != 'Select Description']):
+            market_col = list(accessories_df.iloc[2]).index(market)
+            row_mask = (accessories_df.iloc[:, 0] == category) & \
+                       (accessories_df.iloc[:, 1] == sub_category) & \
+                       (accessories_df.iloc[:, 3] == description)
             if row_mask.any():
                 row_idx = row_mask.idxmax()
                 price = accessories_df.at[row_idx, market_col]
@@ -175,26 +181,26 @@ with col1:
                 price_text = f"Price: {format_price(price)} {currency}"
                 part_text = f"Part Number: {part}"
                 contents_text = f"Contents: {contents}"
-    
-    # Loupes Only Mode
+
+    # === LOUPES ONLY MODE ===
     elif mode == 'Loupes Only' and not loupes_df.empty:
         markets = [str(x) for x in loupes_df.iloc[1, 2:].dropna().tolist() if x != '']
         market = st.selectbox("Select Market", ['Select Market'] + markets)
-        
+
         telescopes = [str(x) for x in loupes_df.iloc[3:33, 0].dropna().astype(str).unique().tolist() if x != '']
         telescope = st.selectbox("Select Telescope", ['Select Telescope'] + telescopes)
-        
+
         frames = []
         if telescope != 'Select Telescope':
             frame_mask = loupes_df.iloc[:, 0] == telescope
             frames = [str(x) for x in loupes_df.loc[frame_mask, 1].dropna().astype(str).unique().tolist() if x != '']
         frame = st.selectbox("Select Frame", ['Select Frame'] + frames)
-        
+
         bifocal = st.checkbox("Bifocal?")
-        st.session_state.bifocal_price = 100 if bifocal else 0  # Default from your code
-        
+        st.session_state.bifocal_price = 100 if bifocal else 0
+
         if all([market != 'Select Market', telescope != 'Select Telescope', frame != 'Select Frame']):
-            market_col = list(loupes_df.iloc[1]).index(market) 
+            market_col = list(loupes_df.iloc[1]).index(market)
             row_mask = (loupes_df.iloc[:, 0] == telescope) & (loupes_df.iloc[:, 1] == frame)
             if row_mask.any():
                 row_idx = row_mask.idxmax()
@@ -206,23 +212,23 @@ with col1:
                     st.session_state.bifocal_price = bifocal_price
                     price_text += f"\n+ Bifocal: {format_price(bifocal_price)} {currency}"
                 part_text = f"Part Number: {loupes_df.at[row_idx, market_col + 1]}"
-    
-    # Light Systems Mode
+
+    # === LIGHT SYSTEMS MODE ===
     elif mode == 'Light Systems' and not lights_df.empty:
         markets = [str(x) for x in lights_df.iloc[2, 3:].dropna().tolist() if x != '']
         market = st.selectbox("Select Market", ['Select Market'] + markets)
-        
+
         light_systems = [str(x) for x in lights_df.iloc[4:, 0].dropna().astype(str).unique().tolist() if x != '']
         light_system = st.selectbox("Select Light System", ['Select Light System'] + light_systems)
-        
+
         descriptions = []
         if light_system != 'Select Light System':
             desc_mask = lights_df.iloc[:, 0] == light_system
             descriptions = [str(x) for x in lights_df.loc[desc_mask, 2].dropna().astype(str).unique().tolist() if x != '']
         description = st.selectbox("Select Description", ['Select Description'] + descriptions)
-        
+
         if all([market != 'Select Market', light_system != 'Select Light System', description != 'Select Description']):
-            market_col = list(lights_df.iloc[2]).index(market) 
+            market_col = list(lights_df.iloc[2]).index(market)
             row_mask = (lights_df.iloc[:, 0] == light_system) & (lights_df.iloc[:, 2] == description)
             if row_mask.any():
                 row_idx = row_mask.idxmax()
@@ -231,100 +237,89 @@ with col1:
                 part = lights_df.at[row_idx, 1]
                 price_text = f"Price: {format_price(price)} {currency}"
                 part_text = f"Part Number: {part}"
-    
-    # Omni Optic Mode (simplified)
+
+    # === OMNI OPTIC MODE ===
     elif mode == 'Omni Optic' and not omni_df.empty:
         markets = [str(x) for x in omni_df.iloc[2, 2:13].dropna().tolist() if x != '']
         market = st.selectbox("Select Market", ['Select Market'] + markets)
-        
+
         products = [str(x) for x in omni_df.iloc[4:16, 0].dropna().astype(str).unique().tolist() if x != '']
         product = st.selectbox("Select Product", ['Select Product'] + products)
-        
+
         descriptions = []
         if product != 'Select Product':
             desc_mask = omni_df.iloc[:, 0] == product
             descriptions = [str(x) for x in omni_df.loc[desc_mask, 1].dropna().astype(str).unique().tolist() if x != '']
         description = st.selectbox("Select Description", ['Select Description'] + descriptions)
-        
+
         if all([market != 'Select Market', product != 'Select Product', description != 'Select Description']):
-            market_col = list(omni_df.iloc[2]).index(market) 
+            market_col = list(omni_df.iloc[2]).index(market)
             row_mask = (omni_df.iloc[:, 0] == product) & (omni_df.iloc[:, 1] == description)
             if row_mask.any():
                 row_idx = row_mask.idxmax()
                 price = omni_df.at[row_idx, market_col]
                 currency = omni_df.at[3, market_col]
                 price_text = f"Price: {format_price(price)} {currency}"
-                part_text = f"Part Number: N/A"
-    
-    # School Bundle Mode (simplified)
+                part_text = "Part Number: N/A"
+
+    # === SCHOOL BUNDLE MODE ===
     elif mode == 'School Bundle' and not school_df.empty:
         configs = [str(x) for x in school_df.iloc[1, 3:19].dropna().tolist() if x != '']
         config = st.selectbox("Select Configuration", ['Select Configuration'] + configs)
-        
+
         loupes = [str(x) for x in school_df.iloc[6:45, 0].dropna().astype(str).unique().tolist() if x != '']
         loupe = st.selectbox("Select Loupe", ['Select Loupe'] + loupes)
-        
+
         lights = []
         if loupe != 'Select Loupe':
             light_mask = school_df.iloc[:, 0] == loupe
             lights = [str(x) for x in school_df.loc[light_mask, 2].dropna().astype(str).unique().tolist() if x != '']
         light = st.selectbox("Select Light", ['Select Light'] + lights)
-        
+
         if all([config != 'Select Configuration', loupe != 'Select Loupe', light != 'Select Light']):
-            config_col = list(school_df.iloc[1]).index(config) 
+            config_col = list(school_df.iloc[1]).index(config)
             row_mask = (school_df.iloc[:, 0] == loupe) & (school_df.iloc[:, 2] == light)
             if row_mask.any():
                 row_idx = row_mask.idxmax()
                 currency = school_df.at[2, config_col]
                 bundle_price = school_df.at[row_idx, config_col + 3]
                 price_text = f"Bundle: {format_price(bundle_price)} {currency}"
-                part_text = f"Loupe: {format_price(school_df.at[row_idx, config_col])} {currency}\nLight: {format_price(school_df.at[row_idx, config_col + 1])} {currency}\nDiscount: {format_price(school_df.at[row_idx, config_col + 2])} {currency}"
+                part_text = f"Loupe: {format_price(school_df.at[row_idx, config_col])} {currency}\n" \
+                           f"Light: {format_price(school_df.at[row_idx, config_col + 1])} {currency}\n" \
+                           f"Discount: {format_price(school_df.at[row_idx, config_col + 2])} {currency}"
                 contents_text = f"Loupe: {loupe}\nLight: {light}"
-    
-    # Display results
+
+    # === DISPLAY RESULTS ===
     if price_text:
         st.success(price_text)
     if part_text:
         st.info(part_text)
     if contents_text:
         st.caption(contents_text)
-    
-    if st.button("➕ Add to List", type="primary") and price_text:
+
+    if st.button("Add to List", type="primary") and price_text:
         add_to_list(price_text, part_text, contents_text, mode)
         st.success("Added to list!")
 
 with col2:
-    st.subheader("🛒 Shopping List & Total")
-    
-    # List
-    for i, item in enumerate(st.session_state.selection_list):
+    st.subheader("Shopping List & Total")
+
+    for item in st.session_state.selection_list:
         st.text(item)
         st.markdown("---")
-    
-    # Totals
-    total_display = update_total_display()
-    st.metric("Sub-Total", total_display)
-    
-    # Discount
-    discount_input = st.number_input("💰 Optional Discount", min_value=0.0, step=10.0)
+
+    st.metric("Sub-Total", update_total_display())
+
+    discount_input = st.number_input("Optional Discount", min_value=0.0, step=10.0)
     if st.button("Apply Discount"):
         st.session_state.discount = discount_input
         st.session_state.selection_list.append(f"Discount: -{format_price(discount_input)}")
         st.rerun()
-    
-    if st.button("🗑️ Reset List"):
+
+    if st.button("Reset List"):
         st.session_state.selection_list = []
         st.session_state.totals = {}
         st.session_state.discount = 0
         st.rerun()
 
-# Sidebar for password later
-st.sidebar.title("Security")
-st.sidebar.info("App is live! Add password in settings.")
-
-
-
-
-
-
-
+st.sidebar.info(f"Logged in as: {name} ({user_email})")
