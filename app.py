@@ -1,4 +1,4 @@
-# app.py — FINAL: Login in MAIN, ALL MODES, NO ERRORS
+# app.py — FINAL: LOGIN IN MAIN, ALL MODES, NO ERRORS
 import streamlit as st
 import pandas as pd
 from PIL import Image
@@ -17,9 +17,9 @@ try:
     st.success("Config loaded successfully.")
 except Exception as e:
     st.error(f"Config load failed: {e}")
-    st .stop()
+    st.stop()
 
-# === AUTHENTICATOR (location=None → login in main) ===
+# === AUTHENTICATOR ===
 authenticator = stauth.Authenticate(
     config['credentials'],
     config['cookie']['name'],
@@ -28,8 +28,8 @@ authenticator = stauth.Authenticate(
     config['preauthorized']
 )
 
-# === LOGIN IN MAIN (location=None) ===
-name, authentication_status, username = authenticator.login('Login')  # No location!
+# === LOGIN IN MAIN (location='main' REQUIRED) ===
+name, authentication_status, username = authenticator.login('Login', location='main')
 
 if authentication_status == False:
     st.error('Username/password is incorrect')
@@ -37,7 +37,8 @@ if authentication_status == False:
 elif authentication_status is None:
     st.warning('Please enter your username and password.')
 
-    # === REGISTRATION (in main) ===
+    # === REGISTRATION ===
+
     try:
         if authenticator.register_user('Register', pre_authorization=True):
             st.success('User registered successfully')
@@ -54,7 +55,6 @@ if not user_email.endswith('@envistaco.com'):
     st.stop()
 
 # === LOGOUT IN MAIN ===
-
 authenticator.logout('Logout', 'main')
 
 # === LOAD EXCEL SHEETS ===
