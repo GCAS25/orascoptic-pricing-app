@@ -29,7 +29,7 @@ authenticator = stauth.Authenticate(
 )
 
 # === LOGIN IN MAIN (location="main" REQUIRED!) ===
-name, authentication_status, username = authenticator.login('Login', location="main")
+name, authentication_status, username = authenticator.login('Login', "main")
 
 if authentication_status == False:
     st.error('Username/password is incorrect')
@@ -321,3 +321,4 @@ with col2:
         st.rerun()
 
 st.sidebar.info(f"Logged in as: {name} ({user_email})")
+
