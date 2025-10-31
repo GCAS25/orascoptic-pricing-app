@@ -288,16 +288,16 @@ with col1:
                 contents_text = f"Loupe: {loupe}\nLight: {light}"
                 
 # === DISPLAY RESULTS ===
- if price_text:
-        st.success(price_text)
-    if part_text:
-        st.info(part_text)
-    if contents_text:
-        st.caption(contents_text)
+if price_text:
+       st.success(price_text)
+   if part_text:
+       st.info(part_text)
+   if contents_text:
+       st.caption(contents_text)
 
-    if st.button("Add to List", type="primary") and price_text:
-        add_to_list(price_text, part_text, contents_text, mode)
-        st.success("Added to list!")
+   if st.button("Add to List", type="primary") and price_text:
+       add_to_list(price_text, part_text, contents_text, mode)
+       st.success("Added to list!")
 
 with col2:
     st.subheader("Shopping List & Total")
@@ -320,4 +320,5 @@ with col2:
         st.rerun()
 
 st.sidebar.info(f"Logged in as: {name} ({user_email})")
+
 
