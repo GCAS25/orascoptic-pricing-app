@@ -286,6 +286,7 @@ with col1:
                            f"Light: {format_price(school_df.at[row_idx, config_col + 1])} {currency}\n" \
                            f"Discount: {format_price(school_df.at[row_idx, config_col + 2])} {currency}"
                 contents_text = f"Loupe: {loupe}\nLight: {light}"
+                
 # === DISPLAY RESULTS ===
  if price_text:
         st.success(price_text)
@@ -319,3 +320,4 @@ with col2:
         st.rerun()
 
 st.sidebar.info(f"Logged in as: {name} ({user_email})")
+
